@@ -6,13 +6,28 @@
 production bytes through pinned EMS instructions for charge/discharge at 250 W
 and 5 kW, verifies the 16-character correlation index and status fields, confirms
 same-family disable, and exercises the native 90-second expiry. No hardware
-commands were used for those tests. Physical trial results will be recorded
-separately after development-build validation.
+commands were used for those native tests.
+
+A short owner-authorized physical trial of the same control path then sent
+250 W charge and discharge requests, each with a finite 90-second device duration.
+Measured battery powers were approximately -177 W while charging and +266 W
+while discharging. Both starts had matching mode/setpoint/SoC readback; both
+explicit stops were confirmed and normal self-consumption resumed. Four commands
+were acknowledged and their replies consumed locally. Cloud forwarding remained
+connected, and both force switches were left off. No installer/safety settings,
+firmware, calibration, SmartDispatch persistence or router rules were changed.
+
+The requested setpoint and measured battery power are separate values; regulation,
+losses and operating conditions affect actual watts. This short trial does not
+validate all SoC cutoffs, maximum-power operation, prolonged WAN independence or
+other firmware/hardware. **87 HA/core tests pass from source and extracted ZIP;
+65 private research/native/relay tests pass.** Main and release-tag CI passed.
 
 The mode-2 encoding matches the manufacturer draft and the earlier independent
 native Modbus/Wi-Fi state equivalence. An ACK alone is insufficient: switches
-require fresh matching device state. A learned/cached inverter rating gates starts; current reported battery limits
-can reduce that ceiling. Sparse-report handling was corrected during commissioning. See [control scope](CONTROL.md).
+require fresh matching device state. A learned/cached inverter rating gates
+starts; current reported battery limits can reduce that ceiling. Sparse-report
+handling was corrected during commissioning. See [control scope](CONTROL.md).
 
 ## 0.4.0 standalone fallback
 
