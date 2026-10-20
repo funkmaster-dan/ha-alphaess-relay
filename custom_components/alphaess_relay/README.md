@@ -1,17 +1,20 @@
-# AlphaESS Relay for Home Assistant
+# AlphaESS Relay — Local monitoring and control
 
-Local battery monitoring and timed charge/discharge controls in Home Assistant.
-The integration keeps the normal AlphaESS cloud connection and offers automatic
-local fallback when the cloud is unavailable.
+**Monitor and control your AlphaESS battery locally from Home Assistant.**
+Battery readings are decoded inside Home Assistant, and charge/discharge commands
+are sent directly to the battery over your local network. These features use no
+AlphaESS cloud API or portal login.
 
-It runs inside Home Assistant: no separate server, broker or portal credentials.
-**A one-time router redirect is required.**
+Everything runs inside Home Assistant, with no separate server or broker.
+**A one-time router redirect is required** to route the battery connection through
+the integration.
 
 ## What you get
 
-- Live state of charge, solar generation, home load, grid power and battery power.
-- **Force charge** and **Force discharge** switches, each with power, target SoC
-  and duration settings.
+- **Local monitoring:** live state of charge, solar generation, home load, grid
+  power and battery power, decoded from the battery connection.
+- **Local control:** **Force charge** and **Force discharge** switches, each
+  with power, target SoC and duration settings.
 - Actions for starting a charge/discharge until a chosen end time.
 - Connection, local-fallback and last-received diagnostics.
 
@@ -104,8 +107,9 @@ without a time-zone offset use Home Assistant's configured time zone.
 
 ## Cloud outages and Home Assistant downtime
 
-Local fallback is enabled by default. During a cloud failure, reporting and
-explicit charge/discharge actions can run locally. The relay retries the cloud
+The relay also preserves the normal AlphaESS cloud connection while monitoring
+and user controls are handled locally. Local fallback is enabled by default so
+reporting and charge/discharge actions can continue during a cloud failure. The relay retries the cloud
 through a new battery connection every five minutes; reconnection can cause gaps.
 Locally acknowledged live reports are **not backfilled to the AlphaESS cloud**.
 Prolonged physical WAN independence remains unverified.
