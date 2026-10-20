@@ -10,10 +10,11 @@
         },
         "sections": {
           "listener": {
-            "name": "Advanced listening settings",
+            "name": "Advanced relay settings",
             "data": {
               "listen_port": "Listening port",
-              "listen_host": "Listening IPv4 address"
+              "listen_host": "Listening IPv4 address",
+              "fallback_enabled": "Use local reporting when the cloud is unavailable"
             }
           }
         }
@@ -31,11 +32,12 @@
   "options": {
     "step": {
       "init": {
-        "title": "Relay listening settings",
-        "description": "Change these only when needed for your network. Update the static router redirect to match. Applying changes restarts this relay connection.",
+        "title": "Relay settings",
+        "description": "Local fallback keeps receiving reports during cloud outages. The relay reconnects periodically to check cloud recovery. It does not upload locally acknowledged reports to the cloud. Changing settings restarts this connection; update your router redirect if you change the listening address or port.",
         "data": {
           "listen_port": "Listening port",
-          "listen_host": "Listening IPv4 address"
+          "listen_host": "Listening IPv4 address",
+          "fallback_enabled": "Use local reporting when the cloud is unavailable"
         }
       }
     },
@@ -73,6 +75,9 @@
     "binary_sensor": {
       "relay_connected": {
         "name": "Relay connected"
+      },
+      "local_fallback_active": {
+        "name": "Local fallback active"
       }
     }
   }

@@ -6,7 +6,7 @@ from .entity import RelayEntity
 
 
 async def async_setup_entry(hass, entry, async_add_entities):
-    async_add_entities([RelayConnected(entry.runtime_data)])
+    async_add_entities([RelayConnected(entry.runtime_data), LocalFallbackActive(entry.runtime_data)])
 
 
 class RelayConnected(RelayEntity, BinarySensorEntity):
@@ -24,3 +24,19 @@ class RelayConnected(RelayEntity, BinarySensorEntity):
     @property
     def is_on(self):
         return bool(self.coordinator.data.get("upstream_connected"))
+
+
+class LocalFallbackActive(RelayEntity, BinarySensorEntity):
+    _attr_translation_key = "local_fallback_active"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(self, coordinator):
+        super().__init__(coordinator, "local_fallback_active")
+
+    @property
+    def available(self):
+        return self.coordinator.running
+
+    @property
+    def is_on(self):
+        return bool(self.coordinator.data.get("local_connected"))

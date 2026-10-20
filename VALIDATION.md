@@ -1,5 +1,23 @@
 # Validation — 20 October 2026
 
+## 0.4.0 standalone fallback
+
+Fallback is enabled by default for new and existing entries. Healthy cloud
+sessions forward unchanged. Failed/silent cloud sessions are retired before
+local replies, and local sessions periodically reconnect to check recovery.
+History/log ACKs and physical controls are excluded. See
+[behavior and limitations](STANDALONE.md).
+
+**65 HA/core tests pass from source and the extracted release ZIP**.
+**64 private research/relay tests pass**, including
+pinned native EMS instructions generating requests and consuming this responder's
+replies. Seven native exchanges complete without configuration writes. Tests
+cover refusal, established disconnect, silent cloud, local telemetry, withheld
+history/log ACKs, fresh-session recovery and normal opaque forwarding.
+
+These results do not establish autonomous firmware scheduling, physical cold
+boot, long outages, licensing/time expiry or independence from TCP/51100.
+
 ## 0.3.0 power sensors
 
 The added generation, home-load and total grid I/O sensors use watts, power

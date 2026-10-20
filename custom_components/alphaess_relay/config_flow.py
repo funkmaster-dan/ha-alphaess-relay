@@ -7,8 +7,8 @@ from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import section
 
-from .const import (CONF_LISTEN_HOST, CONF_LISTEN_PORT, CONF_SERIAL,
-                    DEFAULT_LISTEN_HOST, DEFAULT_LISTEN_PORT, DOMAIN)
+from .const import (CONF_FALLBACK_ENABLED, CONF_LISTEN_HOST, CONF_LISTEN_PORT, CONF_SERIAL,
+                    DEFAULT_FALLBACK_ENABLED, DEFAULT_LISTEN_HOST, DEFAULT_LISTEN_PORT, DOMAIN)
 
 
 def normalize_serial(value):
@@ -25,6 +25,8 @@ def listener_schema(values):
         vol.Required(CONF_LISTEN_PORT, default=values.get(CONF_LISTEN_PORT, DEFAULT_LISTEN_PORT)):
             vol.All(vol.Coerce(int), vol.Range(min=1024, max=65535)),
         vol.Required(CONF_LISTEN_HOST, default=values.get(CONF_LISTEN_HOST, DEFAULT_LISTEN_HOST)): str,
+        vol.Required(CONF_FALLBACK_ENABLED, default=values.get(
+            CONF_FALLBACK_ENABLED, DEFAULT_FALLBACK_ENABLED)): bool,
     }
 
 
@@ -35,7 +37,11 @@ def validate_listener(values):
     port = int(values.get(CONF_LISTEN_PORT, DEFAULT_LISTEN_PORT))
     if not 1024 <= port <= 65535:
         raise ValueError("Invalid bind port")
-    return {CONF_LISTEN_HOST: str(address), CONF_LISTEN_PORT: port}
+    fallback = values.get(CONF_FALLBACK_ENABLED, DEFAULT_FALLBACK_ENABLED)
+    if not isinstance(fallback, bool):
+        raise ValueError("Invalid fallback setting")
+    return {CONF_LISTEN_HOST: str(address), CONF_LISTEN_PORT: port,
+            CONF_FALLBACK_ENABLED: fallback}
 
 
 def listener_conflicts(hass, values, *, exclude=None):
@@ -78,6 +84,7 @@ class AlphaESSRelayConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         listener_defaults = {
             CONF_LISTEN_HOST: DEFAULT_LISTEN_HOST,
             CONF_LISTEN_PORT: DEFAULT_LISTEN_PORT,
+            CONF_FALLBACK_ENABLED: DEFAULT_FALLBACK_ENABLED,
             **(user_input or {}).get("listener", {}),
         }
         schema = {

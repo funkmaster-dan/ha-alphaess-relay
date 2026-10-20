@@ -8,7 +8,11 @@
     "source": "tools/alpha_payload.py"
   },
   "relay.py": {
-    "sha256": "bb2bee08c2185d752573e632217ae7bb0ffda137f30f55d4e8b5461948f7953d",
+    "sha256": "8698befbf15c1e08561dca572842e04864c254eb7791b29e074fc661f0b35236",
     "source": "alpha_relay/relay.py"
+  },
+  "standalone.py": {
+    "sha256": "16187c1fcd5574c3106de2d98d146b83c49cc09bb252ef817757df0da99707d0",
+    "source": "alpha_relay/standalone.py"
   }
 }

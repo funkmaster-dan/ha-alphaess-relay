@@ -20,3 +20,7 @@ jobs:
       - run: python tools/build_ha_package.py --check
       - run: python -m pytest -c tests_ha/pytest.ini tests_ha -v
       - run: python tools/build_ha_package.py
+      - run: unzip dist/alphaess-relay-*.zip -d "$RUNNER_TEMP/alphaess-release"
+      - run: python -m pytest -c tests_ha/pytest.ini tests_ha -v
+        env:
+          ALPHAESS_COMPONENT_ROOT: ${{ runner.temp }}/alphaess-release

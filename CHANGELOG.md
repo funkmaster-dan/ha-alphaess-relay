@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.0
+
+- Enable local monitoring fallback by default when the cloud path fails; an advanced option can disable it.
+- Retire failed cloud sessions before local replies; detect an unresponsive cloud and retry through fresh device connections every five minutes in local mode.
+- Support observed login-first and telemetry-first paths with minimal monitoring ACKs. Withhold history/log ACKs; no controls, fabricated settings or cloud backfill.
+- Add Local fallback active diagnostics and reuse existing measurement freshness and identity rules.
+- Add isolated transport, ownership, recovery and HA tests plus private native EMS receiver validation. Prolonged physical WAN independence remains unverified.
+
 ## 0.3.0
 
 - Add Instantaneous generation, Instantaneous home load and Instantaneous grid I/O total, all in W with HA power/measurement metadata.

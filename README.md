@@ -7,12 +7,13 @@ monitoring API or router watchdog to maintain.
 
 This is a community prototype for the researched AlphaESS version-1 Wi-Fi
 protocol. It is not an official AlphaESS integration. Its first release exposes
-monitoring only and preserves the normal AlphaESS cloud connection. No battery
-commands, local ACKs, configuration changes or firmware updates are generated.
+monitoring only and preserves the normal AlphaESS cloud connection. No battery control commands, configuration changes or firmware updates are generated.
+Cloud outage fallback is enabled by default and sends minimal local monitoring
+ACKs only while the cloud path is unavailable.
 
 ## Status and compatibility
 
-- Version 0.3.0; tested with Home Assistant 2026.10.2 and Python 3.14.4.
+- Version 0.4.0; tested with Home Assistant 2026.10.2 and Python 3.14.4.
 - Runtime files are self-contained under `custom_components/alphaess_relay/`.
 - No runtime pip dependencies beyond Home Assistant itself.
 - Offline tests, isolated synthetic peers on live HA, and a short physical
@@ -36,10 +37,14 @@ cloud endpoint `cloudiot.alphaess.com:17777` is handled internally. DNS is
 resolved again for each new device connection; setup does not resolve it or
 connect to the battery/cloud.
 
-The collapsed **Advanced listening settings** section defaults to IPv4
+The collapsed **Advanced relay settings** section defaults to IPv4
 `0.0.0.0`, TCP port `17778`. These settings can also be changed through the
 integration's options. Applying changes reloads the relay and interrupts its
-current TCP session. With no router redirect, the sensors initially show
+current TCP session. The same section includes **Use local reporting when the cloud is unavailable**,
+enabled by default, including for existing entries after upgrade. You can disable
+it in the integration options to retain forwarding-only behavior.
+
+With no router redirect, the sensors initially show
 unavailable and **Relay connected** is off; this is expected.
 
 For HACS installation, add `https://github.com/funkmaster-dan/ha-alphaess-relay`
@@ -57,6 +62,7 @@ and add the integration. HACS does not configure the router.
 | Instantaneous grid I/O total | W; sum of all three grid phases, positive import / negative export |
 | Last received | Diagnostic timestamp of the last accepted live report; remains visible when telemetry becomes stale |
 | Relay connected | Diagnostic binary sensor: an active device-to-cloud relay TCP session exists |
+| Local fallback active | Diagnostic binary sensor: local monitoring replies are active without a cloud session |
 
 SoC and power become unavailable on disconnect, after 45 seconds without a
 valid live report, or until a new session supplies its own live telemetry.
@@ -108,13 +114,36 @@ so the affected TCP session must also reconnect. This does not require a
 battery application command. The complete rollback procedure still needs the
 synthetic LAN routing validation mentioned above.
 
+## Cloud outages and recovery
+
+Normal cloud traffic passes unchanged. If connecting to the cloud fails, the
+integration handles the device session locally. If an established cloud
+connection fails or no cloud bytes arrive for 30 seconds after device data,
+the relay closes that session and uses local mode on the next device connection.
+Closing the old sockets first prevents late cloud ACKs from competing with
+local replies. Reporting can pause during device reconnection.
+
+Local mode acknowledges supported login, startup queries, heartbeats and
+monitoring reports, using the same decoder and sensor freshness rules. It does
+not send battery controls or invent configuration, licensing or time values.
+History and log ACKs are withheld, allowing live reports to continue without
+retiring undelivered history. Live reports acknowledged locally are not uploaded
+or backfilled into the vendor cloud.
+
+Every five minutes of local operation the integration closes the device
+connection so its next connection tries the cloud again. Recovery depends on
+the device's own reconnect timing; it is not an uninterrupted stream. If the
+cloud is still unavailable, local reporting resumes. No router changes or
+separate service are needed. See [standalone behavior and validation limits](https://github.com/funkmaster-dan/ha-alphaess-relay/blob/main/STANDALONE.md).
+
 ## Limits
 
 This version has no local control entities, arbitrary message-send service,
-cloud-outage responder, durable history store, energy-counter normalization or
-automatic router management. Offline decoding is local, but continued reporting
-still depends on the normal cloud session. Full operation without Internet
-access has not been established.
+durable history store, energy-counter normalization or automatic router
+management. Native firmware and isolated loopback tests validate the fallback
+paths. Sustained physical WAN loss, full cold boot, licensing expiry and loss of
+the separate E-Linter channel remain unverified. This is an experimental outage
+responder, not demonstrated complete vendor-cloud replacement.
 
 ## Build and test from the research workspace
 

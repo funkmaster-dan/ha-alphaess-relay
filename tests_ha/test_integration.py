@@ -126,7 +126,8 @@ def dns(hass, monkeypatch):
 def make_entry(hass, port=None, serial=SERIAL):
     entry = MockConfigEntry(domain=DOMAIN, unique_id=serial, title=f"AlphaESS {serial}",
                             data={"serial": serial}, options={"listen_host": "127.0.0.1",
-                                                             "listen_port": port or free_port()})
+                                                             "listen_port": port or free_port(),
+                                                             "fallback_enabled": False})
     entry.add_to_hass(hass)
     return entry
 
@@ -137,12 +138,12 @@ async def test_setup_screen_only_serial(hass):
     assert {str(k) for k in result["data_schema"].schema} == {"serial", "listener"}
     fields = {str(k): v for k, v in result["data_schema"].schema.items()}
     assert fields["listener"].options["collapsed"]
-    assert {str(k) for k in fields["listener"].schema.schema} == {"listen_host", "listen_port"}
+    assert {str(k) for k in fields["listener"].schema.schema} == {"listen_host", "listen_port", "fallback_enabled"}
     serialized = probatio.to_field_list(result["data_schema"], custom_serializer=cv.custom_serializer)
     # The frontend initializes an expandable section from its parent default.
     # An empty parent default hides the nested defaults when expanded.
     listener_field = next(field for field in serialized if field["name"] == "listener")
-    assert listener_field["default"] == {"listen_host": "0.0.0.0", "listen_port": 17778}
+    assert listener_field["default"] == {"listen_host": "0.0.0.0", "listen_port": 17778, "fallback_enabled": True}
     assert "upstream" not in json.dumps(serialized)
     assert "password" not in json.dumps(serialized)
 
@@ -175,7 +176,7 @@ async def test_flow_normalizes_serial_and_applies_defaults_without_probe(hass):
                                                           data={"serial": " offline-test-ems "})
         assert result["type"] is FlowResultType.CREATE_ENTRY
         assert result["data"] == {"serial": SERIAL}
-        assert result["options"] == {"listen_host": "0.0.0.0", "listen_port": 17778}
+        assert result["options"] == {"listen_host": "0.0.0.0", "listen_port": 17778, "fallback_enabled": True}
         await hass.async_block_till_done()
         connect.assert_not_called()
 
@@ -380,6 +381,26 @@ async def test_dns_failure_closes_session_without_ack_then_can_recover(hass, dns
             writer.write(wire())
             await writer.drain()
             await eventually(lambda: state(hass, "soc").state == "50.4")
+
+
+async def test_existing_entry_defaults_to_fallback_and_publishes_ha_sensors(hass, dns):
+    entry = make_entry(hass)
+    options = dict(entry.options)
+    options.pop("fallback_enabled")
+    hass.config_entries.async_update_entry(entry, options=options)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    try:
+        assert entry.runtime_data.relay.config.fallback_enabled
+        async with device(entry) as (reader, writer):
+            writer.write(wire())
+            await writer.drain()
+            assert len(await asyncio.wait_for(reader.readexactly(29), 2)) == 29
+            await eventually(lambda: state(hass, "soc").state == "50.4")
+            assert state(hass, "relay_connected", "binary_sensor").state == "off"
+            assert state(hass, "local_fallback_active", "binary_sensor").state == "on"
+    finally:
+        assert await hass.config_entries.async_unload(entry.entry_id)
 
 
 async def test_busy_listening_port_retries_without_leaking_tasks(hass):

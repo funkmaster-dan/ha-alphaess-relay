@@ -6,8 +6,9 @@ from homeassistant.core import callback
 from homeassistant.helpers.event import async_call_later
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
-from .const import (CONF_LISTEN_HOST, CONF_LISTEN_PORT, CONF_SERIAL, DEFAULT_LISTEN_HOST,
-                    DEFAULT_LISTEN_PORT, DOMAIN, FRESHNESS_SECONDS, UPSTREAM_HOST, UPSTREAM_PORT)
+from .const import (CONF_FALLBACK_ENABLED, CONF_LISTEN_HOST, CONF_LISTEN_PORT, CONF_SERIAL,
+                    DEFAULT_FALLBACK_ENABLED, DEFAULT_LISTEN_HOST, DEFAULT_LISTEN_PORT,
+                    DOMAIN, FRESHNESS_SECONDS, UPSTREAM_HOST, UPSTREAM_PORT)
 from ._relay.observer import Observer
 from ._relay.relay import Relay, RelayConfig
 
@@ -29,6 +30,7 @@ class RelayCoordinator(DataUpdateCoordinator):
             UPSTREAM_HOST, UPSTREAM_PORT, self.serial,
             listen_host=options.get(CONF_LISTEN_HOST, DEFAULT_LISTEN_HOST),
             listen_port=options.get(CONF_LISTEN_PORT, DEFAULT_LISTEN_PORT),
+            fallback_enabled=options.get(CONF_FALLBACK_ENABLED, DEFAULT_FALLBACK_ENABLED),
         ), observer=observer, task_factory=task_factory)
         self._unsubscribe = observer.subscribe(self._handle_update)
         self._expire_cancel = None
