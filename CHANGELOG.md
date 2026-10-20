@@ -4,6 +4,7 @@
 
 - Populate the advanced setup section with its listening address and port defaults when expanded in the live HA frontend.
 - Verified on live Home Assistant 2026.10.2 through Playwright; regression coverage checks the section data sent to the frontend.
+- Later live validation confirmed byte-exact physical pass-through and 21 real cloud telemetry acknowledgements; see `VALIDATION.md` for scope and remaining soak tests.
 
 ## 0.2.0
 

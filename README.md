@@ -12,11 +12,12 @@ commands, local ACKs, configuration changes or firmware updates are generated.
 
 ## Status and compatibility
 
-- Version 0.2.0; tested with Home Assistant 2026.10.2 and Python 3.14.4.
+- Version 0.2.1; tested with Home Assistant 2026.10.2 and Python 3.14.4.
 - Runtime files are self-contained under `custom_components/alphaess_relay/`.
 - No runtime pip dependencies beyond Home Assistant itself.
-- Synthetic/recorded-byte tests are offline. A live router diversion and
-  physical battery pass-through are not yet validated for this package.
+- Offline tests, isolated synthetic peers on live HA, and a short physical
+  battery pass-through have passed. An extended soak is still needed; see
+  [validation evidence and limits](VALIDATION.md).
 - Repository: [funkmaster-dan/ha-alphaess-relay](https://github.com/funkmaster-dan/ha-alphaess-relay).
 - Install through HACS as a custom repository of type **Integration**, or use
   the ZIP from GitHub Releases for a manual installation.
