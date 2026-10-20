@@ -1,0 +1,70 @@
+{
+  "title": "AlphaESS Relay",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect your AlphaESS battery",
+        "description": "Enter the system serial printed on your battery or shown in the AlphaESS app. This integration receives existing traffic through a static router redirect; it does not scan or query the battery. The cloud destination is configured automatically. Listening settings are available under advanced options.",
+        "data": {
+          "serial": "Battery system serial"
+        },
+        "sections": {
+          "listener": {
+            "name": "Advanced listening settings",
+            "data": {
+              "listen_port": "Listening port",
+              "listen_host": "Listening IPv4 address"
+            }
+          }
+        }
+      }
+    },
+    "error": {
+      "invalid_serial": "Enter a valid battery system serial.",
+      "invalid_listener": "Enter a valid IPv4 listening address and a port from 1024 to 65535.",
+      "listener_in_use": "Another AlphaESS Relay entry uses this listening address and port. Open advanced listening settings to choose a different port."
+    },
+    "abort": {
+      "already_configured": "This battery is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Relay listening settings",
+        "description": "Change these only when needed for your network. Update the static router redirect to match. Applying changes restarts this relay connection.",
+        "data": {
+          "listen_port": "Listening port",
+          "listen_host": "Listening IPv4 address"
+        }
+      }
+    },
+    "error": {
+      "invalid_listener": "Enter a valid IPv4 listening address and a port from 1024 to 65535.",
+      "listener_in_use": "Another AlphaESS Relay entry uses this listening address and port."
+    }
+  },
+  "exceptions": {
+    "cannot_listen": {
+      "message": "The relay listening port is unavailable. Free the port or change it in the integration options."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "state_of_charge": {
+        "name": "State of charge"
+      },
+      "battery_power_raw": {
+        "name": "Battery power (raw)"
+      },
+      "last_received": {
+        "name": "Last received"
+      }
+    },
+    "binary_sensor": {
+      "relay_connected": {
+        "name": "Relay connected"
+      }
+    }
+  }
+}

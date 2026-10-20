@@ -1,0 +1,2 @@
+# Real HA runtime and matching custom-integration test fixtures; Python 3.14.
+pytest-homeassistant-custom-component==0.13.373

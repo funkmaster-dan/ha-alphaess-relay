@@ -1,0 +1,22 @@
+name: Integration tests
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: requirements-ha-test.txt
+      - run: python -m pip install -r requirements-ha-test.txt
+      - run: python tools/build_ha_package.py --check
+      - run: python -m pytest -c tests_ha/pytest.ini tests_ha -v
+      - run: python tools/build_ha_package.py
