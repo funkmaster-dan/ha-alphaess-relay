@@ -30,6 +30,7 @@ class RelayConfig:
     fallback_enabled: bool = False
     cloud_response_timeout: float = 30
     recovery_interval: float = 300
+    controls_enabled: bool = False
 
     def __post_init__(self):
         # An explicit hostname resolves anew for each device connection. No
@@ -47,7 +48,7 @@ class RelayConfig:
             raise ValueError("Invalid relay port")
         if not isinstance(self.expected_serial, str) or not 1 <= len(self.expected_serial) <= 64:
             raise ValueError("An expected serial is required")
-        if not isinstance(self.fallback_enabled, bool):
+        if not isinstance(self.fallback_enabled, bool) or not isinstance(self.controls_enabled, bool):
             raise ValueError("Invalid fallback setting")
         for value in (self.connect_timeout, self.write_timeout, self.idle_timeout, self.eof_timeout,
                       self.cloud_response_timeout, self.recovery_interval):
@@ -77,6 +78,9 @@ class Relay:
         self.last_close_reason = None
         self.mode = "disconnected"
         self._fallback_next = False
+        from .control import ControlState
+        self.control_state = ControlState(config.expected_serial, self.observer.notify)
+        self.control_channel = None
 
     @property
     def address(self):
@@ -116,21 +120,34 @@ class Relay:
         while True:
             data = await reader.read(self.config.chunk_bytes)
             if not data:
+                if direction == "upstream" and self.control_channel and self.control_channel.filter_enabled:
+                    # Previously unforwarded partial data must not disappear at EOF.
+                    writer.write(bytes(self.control_channel.up.buffer))
+                    self.control_channel.up.buffer.clear()
+                    await asyncio.wait_for(writer.drain(), self.config.write_timeout)
                 if writer.can_write_eof():
                     writer.write_eof()
                     await asyncio.wait_for(writer.drain(), self.config.write_timeout)
                 return "eof"
             activity[0] = time.monotonic()
             if direction == "upstream":
-                if pending[0] is None:
-                    pending[0] = time.monotonic()
                 # Timestamp/queue receipt before downstream backpressure can
                 # delay it. Publication never waits for cloud acknowledgement.
                 self.observer.offer(session, data)
+                if self.control_channel:
+                    data = self.control_channel.observe_up(data)
+                if data and pending[0] is None:
+                    pending[0] = time.monotonic()
             else:
                 pending[0] = None
-            writer.write(data)
-            await asyncio.wait_for(writer.drain(), self.config.write_timeout)
+            if direction == "downstream" and self.control_channel:
+                async with self.control_channel.write_lock:
+                    self.control_channel.observe_down(data)
+                    writer.write(data)
+                    await asyncio.wait_for(writer.drain(), self.config.write_timeout)
+            else:
+                writer.write(data)
+                await asyncio.wait_for(writer.drain(), self.config.write_timeout)
             self.counters[direction + "_bytes"] += len(data)
 
     async def _idle(self, activity):
@@ -155,7 +172,7 @@ class Relay:
         try:
             async with asyncio.timeout(self.config.recovery_interval):
                 return await serve_standalone(reader, writer, session, self.config,
-                                              self.observer, self.counters)
+                                              self.observer, self.counters, self.control_channel)
         except TimeoutError:
             # Device reconnects through the same static route. Try real cloud
             # first on that new session; never splice streams or replay traffic.
@@ -168,6 +185,9 @@ class Relay:
         self.counters["accepted_connections"] += 1
         self.writers.add(device_writer)
         try:
+            if self.config.controls_enabled:
+                from .control import ControlChannel
+                self.control_channel = ControlChannel(self.control_state, device_writer)
             if self.config.fallback_enabled and self._fallback_next:
                 self._fallback_next = False
                 reason = await self._local_session(device_reader, device_writer, session)
@@ -234,6 +254,10 @@ class Relay:
             reason = "internal_error"
             self.counters["internal_errors"] += 1
         finally:
+            if self.control_channel:
+                self.control_channel.close()
+                self.control_channel = None
+            self.control_state.disconnected()
             if self.config.fallback_enabled and self.mode == "cloud" and reason in (
                     "write_timeout", "connection_error", "eof_timeout"):
                 self._fallback_next = True
@@ -265,6 +289,8 @@ class Relay:
                 "upstream_connected": self.observer.connected and self.mode == "cloud",
                 "local_connected": self.observer.connected and self.mode == "local",
                 "mode": self.mode, "fallback_enabled": self.config.fallback_enabled,
+                "controls": self.control_state.snapshot(),
+                "control_channel_ready": bool(self.control_channel and self.control_channel.ready),
                 "last_close_reason": self.last_close_reason,
                 "counters": dict(self.counters), **self.observer.snapshot()}
 

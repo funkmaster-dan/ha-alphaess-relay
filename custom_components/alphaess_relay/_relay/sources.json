@@ -1,4 +1,8 @@
 {
+  "control.py": {
+    "sha256": "9c62da4b1d13129933c5180cb2f08a7c877e24f5d5b0f136a2a0a2d34dafa37d",
+    "source": "alpha_relay/control.py"
+  },
   "observer.py": {
     "sha256": "40ba811a7763068ff5a878ab5f19ef35b0e4abd571efb3a878d86af69efe14a3",
     "source": "alpha_relay/observer.py"
@@ -8,11 +12,11 @@
     "source": "tools/alpha_payload.py"
   },
   "relay.py": {
-    "sha256": "8698befbf15c1e08561dca572842e04864c254eb7791b29e074fc661f0b35236",
+    "sha256": "e4c13c32645577515ca82e294317d3ce423c5c19151d81b235b0eb38d89c750b",
     "source": "alpha_relay/relay.py"
   },
   "standalone.py": {
-    "sha256": "16187c1fcd5574c3106de2d98d146b83c49cc09bb252ef817757df0da99707d0",
+    "sha256": "a66c1e5eebebe1cf32b6c2722507cadf7471de5782c8d064b19291b131795182",
     "source": "alpha_relay/standalone.py"
   }
 }

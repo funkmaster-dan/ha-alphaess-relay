@@ -138,7 +138,7 @@ async def test_setup_screen_only_serial(hass):
     assert {str(k) for k in result["data_schema"].schema} == {"serial", "listener"}
     fields = {str(k): v for k, v in result["data_schema"].schema.items()}
     assert fields["listener"].options["collapsed"]
-    assert {str(k) for k in fields["listener"].schema.schema} == {"listen_host", "listen_port", "fallback_enabled"}
+    assert {str(k) for k in fields["listener"].schema.schema} == {"listen_host", "listen_port", "fallback_enabled", "inverter_rating_w"}
     serialized = probatio.to_field_list(result["data_schema"], custom_serializer=cv.custom_serializer)
     # The frontend initializes an expandable section from its parent default.
     # An empty parent default hides the nested defaults when expanded.

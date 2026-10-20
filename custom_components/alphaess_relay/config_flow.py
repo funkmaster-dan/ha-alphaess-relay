@@ -21,13 +21,17 @@ def normalize_serial(value):
 
 
 def listener_schema(values):
-    return {
+    schema = {
         vol.Required(CONF_LISTEN_PORT, default=values.get(CONF_LISTEN_PORT, DEFAULT_LISTEN_PORT)):
             vol.All(vol.Coerce(int), vol.Range(min=1024, max=65535)),
         vol.Required(CONF_LISTEN_HOST, default=values.get(CONF_LISTEN_HOST, DEFAULT_LISTEN_HOST)): str,
         vol.Required(CONF_FALLBACK_ENABLED, default=values.get(
             CONF_FALLBACK_ENABLED, DEFAULT_FALLBACK_ENABLED)): bool,
     }
+    key = vol.Optional("inverter_rating_w", **({"default": values["inverter_rating_w"]}
+                                              if "inverter_rating_w" in values else {}))
+    schema[key] = vol.All(vol.Coerce(int), vol.Range(min=100, max=30000))
+    return schema
 
 
 def validate_listener(values):
@@ -40,8 +44,14 @@ def validate_listener(values):
     fallback = values.get(CONF_FALLBACK_ENABLED, DEFAULT_FALLBACK_ENABLED)
     if not isinstance(fallback, bool):
         raise ValueError("Invalid fallback setting")
-    return {CONF_LISTEN_HOST: str(address), CONF_LISTEN_PORT: port,
-            CONF_FALLBACK_ENABLED: fallback}
+    result = {CONF_LISTEN_HOST: str(address), CONF_LISTEN_PORT: port,
+              CONF_FALLBACK_ENABLED: fallback}
+    if "inverter_rating_w" in values:
+        value = values["inverter_rating_w"]
+        if isinstance(value, bool) or not 100 <= int(value) <= 30000 or float(value) != int(value):
+            raise ValueError("Invalid inverter rating")
+        result["inverter_rating_w"] = int(value)
+    return result
 
 
 def listener_conflicts(hass, values, *, exclude=None):

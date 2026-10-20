@@ -11,6 +11,7 @@ from .const import (CONF_FALLBACK_ENABLED, CONF_LISTEN_HOST, CONF_LISTEN_PORT, C
                     DOMAIN, FRESHNESS_SECONDS, UPSTREAM_HOST, UPSTREAM_PORT)
 from ._relay.observer import Observer
 from ._relay.relay import Relay, RelayConfig
+from .control import DispatchController
 
 LOGGER = logging.getLogger(__name__)
 
@@ -31,7 +32,9 @@ class RelayCoordinator(DataUpdateCoordinator):
             listen_host=options.get(CONF_LISTEN_HOST, DEFAULT_LISTEN_HOST),
             listen_port=options.get(CONF_LISTEN_PORT, DEFAULT_LISTEN_PORT),
             fallback_enabled=options.get(CONF_FALLBACK_ENABLED, DEFAULT_FALLBACK_ENABLED),
+            controls_enabled=True,
         ), observer=observer, task_factory=task_factory)
+        self.control = DispatchController(self, hass, entry)
         self._unsubscribe = observer.subscribe(self._handle_update)
         self._expire_cancel = None
         self._close_lock = asyncio.Lock()
@@ -39,6 +42,7 @@ class RelayCoordinator(DataUpdateCoordinator):
         self.running = False
 
     async def async_start(self):
+        await self.control.async_load()
         await self.relay.start()
         self.running = True
         self._handle_update()
@@ -47,6 +51,7 @@ class RelayCoordinator(DataUpdateCoordinator):
     def _handle_update(self):
         if self.closed:
             return
+        self.control.state_updated()
         if self._expire_cancel:
             self._expire_cancel()
             self._expire_cancel = None
@@ -69,6 +74,7 @@ class RelayCoordinator(DataUpdateCoordinator):
         async with self._close_lock:
             if self.closed:
                 return
+            await self.control.async_close()
             self.closed = True
             self.running = False
             self._unsubscribe()

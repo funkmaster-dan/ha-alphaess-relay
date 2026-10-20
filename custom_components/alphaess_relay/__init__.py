@@ -8,6 +8,13 @@ if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
 
 
+async def async_setup(hass: HomeAssistant, config: dict) -> bool:
+    from .services import register_services
+
+    register_services(hass)
+    return True
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Start the local listener without contacting the battery or cloud."""
     from homeassistant.const import EVENT_HOMEASSISTANT_STOP, Platform
@@ -34,7 +41,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             if entity.platform == DOMAIN and entity.unique_id == f"{entry.data[CONF_SERIAL]}_battery_power_raw":
                 registry.async_remove(entity.entity_id)
         await hass.config_entries.async_forward_entry_setups(
-            entry, [Platform.SENSOR, Platform.BINARY_SENSOR]
+            entry, [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.NUMBER, Platform.SWITCH]
         )
     except BaseException:
         await coordinator.async_close()
@@ -56,7 +63,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     from homeassistant.const import Platform
 
     if await hass.config_entries.async_unload_platforms(
-        entry, [Platform.SENSOR, Platform.BINARY_SENSOR]
+        entry, [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.NUMBER, Platform.SWITCH]
     ):
         await entry.runtime_data.async_close()
         return True

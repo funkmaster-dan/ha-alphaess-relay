@@ -73,4 +73,6 @@ captures are not distributed.
 These tests do not demonstrate autonomous scheduling, full physical cold boot,
 licensing/time expiry, installed-dongle compatibility during prolonged WAN loss,
 or independence from TCP/51100. Physical outage/recovery validation remains
-necessary. Battery control remains outside this feature.
+necessary. Version 0.5.0 adds explicit charge/discharge actions through the same
+local session; see [control behavior](CONTROL.md). Fallback never initiates a
+charge/discharge action by itself.

@@ -14,6 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 COMPONENT = ROOT / "custom_components/alphaess_relay"
 SOURCES = {"relay.py": "alpha_relay/relay.py", "observer.py": "alpha_relay/observer.py",
            "standalone.py": "alpha_relay/standalone.py",
+           "control.py": "alpha_relay/control.py",
            "payload.py": "tools/alpha_payload.py"}
 
 
@@ -45,10 +46,10 @@ def package():
     manifest = json.loads((COMPONENT / "manifest.json").read_text())
     path = destination / f"alphaess-relay-{manifest['version']}.zip"
     files = [(p.relative_to(ROOT).as_posix(), p) for p in COMPONENT.rglob("*")
-             if p.is_file() and p.suffix in (".py", ".json", ".md", ".png")
+             if p.is_file() and p.suffix in (".py", ".json", ".md", ".png", ".yaml")
              and "__pycache__" not in p.parts]
     files.extend([("hacs.json", ROOT/"hacs.json"), ("README.md", COMPONENT/"README.md"),
-                  ("STANDALONE.md", ROOT/"STANDALONE.md")])
+                  ("STANDALONE.md", ROOT/"STANDALONE.md"), ("CONTROL.md", ROOT/"CONTROL.md")])
     with zipfile.ZipFile(path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
         for name, source in sorted(files):
             info = zipfile.ZipInfo(name, date_time=(2026, 10, 20, 0, 0, 0))

@@ -126,7 +126,7 @@ class StandaloneRelay(Relay):
                 "standalone_connected": self.observer.connected}
 
 
-async def serve_standalone(reader, writer, session, config, observer, counters):
+async def serve_standalone(reader, writer, session, config, observer, counters, channel=None):
     """One bounded local session; caller owns connectivity and socket cleanup."""
     policy = StandaloneSession(config.expected_serial)
     frame_started = False
@@ -140,17 +140,28 @@ async def serve_standalone(reader, writer, session, config, observer, counters):
                 header = await reader.readexactly(7)
                 frame_started = True
                 version, kind, _, length = struct.unpack(">BBBI", header)
-                if version != 1 or kind != 1 or length > MAX_PAYLOAD:
+                if version != 1 or kind not in ((1, 2) if channel else (1,)) or length > MAX_PAYLOAD:
                     raise StandaloneRejected("invalid_frame")
                 raw = header + await reader.readexactly(length + 2)
+            if channel:
+                forwarded = channel.observe_up(raw)
+                if kind == 2:
+                    if forwarded:
+                        raise StandaloneRejected("unexpected_response")
+                    continue
             response = policy.response(raw)
             if response is None:
                 counters["withheld_history_log_acks"] += 1
                 continue
             observer.offer(session, raw)
-            writer.write(response)
             try:
-                await asyncio.wait_for(writer.drain(), config.write_timeout)
+                if channel:
+                    async with channel.write_lock:
+                        writer.write(response)
+                        await asyncio.wait_for(writer.drain(), config.write_timeout)
+                else:
+                    writer.write(response)
+                    await asyncio.wait_for(writer.drain(), config.write_timeout)
             except TimeoutError:
                 return "write_timeout"
             counters["local_replies"] += 1

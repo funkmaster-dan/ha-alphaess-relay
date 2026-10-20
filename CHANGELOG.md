@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.0
+
+- Add device-confirmed Force charge and Force discharge switches, with separate wattage, target SoC and duration inputs.
+- Add Start charge / Start discharge action forms supporting duration or absolute end time, plus a confirmed mode-2 stop action.
+- Learn/cache inverter rating from Poinv and validate starts against fresh battery charge/discharge limits. No fixed 5,000 W ceiling.
+- Validate 5–100% targets, round 0.4% protocol steps conservatively, and enforce native-compatible finite durations of 90 seconds to three hours.
+- Correlate bounded command indices and require fresh state readback after the ACK. Serialize at complete frame boundaries, keep owned ACKs off the cloud stream, and do not retry uncertain controls automatically.
+- Native tests verify production encoding, both directions, stop and expiry. Loopback/HA tests cover framing, ACK ownership, cloud conflict, settings, interlocks, deadlines and unavailable/invalid inputs.
+
 ## 0.4.0
 
 - Enable local monitoring fallback by default when the cloud path fails; an advanced option can disable it.

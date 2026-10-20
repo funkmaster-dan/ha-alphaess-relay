@@ -1,0 +1,95 @@
+start_charge:
+  name: Start charge
+  description: Force charge with device-limited watts, target SoC and a duration or end time. Omitted inputs use the corresponding number entities. Requires fresh device readback.
+  fields:
+    entry_id:
+      name: Integration
+      description: Optional when only one AlphaESS Relay integration is loaded.
+      selector:
+        config_entry:
+          integration: alphaess_relay
+    power_w:
+      name: Power
+      description: Watts, no greater than the reported inverter and battery limits.
+      selector:
+        number:
+          min: 100
+          max: 30000
+          mode: box
+          unit_of_measurement: W
+    target_soc:
+      name: Target SoC
+      description: Minimum 5%. Below current SoC for discharge, above it for charge.
+      selector:
+        number:
+          min: 5
+          max: 100
+          mode: box
+          unit_of_measurement: "%"
+    duration_minutes:
+      name: Duration
+      description: Choose this or an end time. Firmware requires at least 90 seconds.
+      selector:
+        number:
+          min: 1.5
+          max: 180
+          step: 0.5
+          mode: box
+          unit_of_measurement: min
+    end_time:
+      name: End time
+      description: Choose this or a duration. Times without an offset use the Home Assistant time zone.
+      selector:
+        datetime:
+start_discharge:
+  name: Start discharge
+  description: Force discharge with device-limited watts, target SoC and a duration or end time. Omitted inputs use the corresponding number entities. Requires fresh device readback.
+  fields:
+    entry_id:
+      name: Integration
+      description: Optional when only one AlphaESS Relay integration is loaded.
+      selector:
+        config_entry:
+          integration: alphaess_relay
+    power_w:
+      name: Power
+      description: Watts, no greater than the reported inverter and battery limits.
+      selector:
+        number:
+          min: 100
+          max: 30000
+          mode: box
+          unit_of_measurement: W
+    target_soc:
+      name: Target SoC
+      description: Minimum 5%. Below current SoC for discharge, above it for charge.
+      selector:
+        number:
+          min: 5
+          max: 100
+          mode: box
+          unit_of_measurement: "%"
+    duration_minutes:
+      name: Duration
+      description: Choose this or an end time. Firmware requires at least 90 seconds.
+      selector:
+        number:
+          min: 1.5
+          max: 180
+          step: 0.5
+          mode: box
+          unit_of_measurement: min
+    end_time:
+      name: End time
+      description: Choose this or a duration. Times without an offset use the Home Assistant time zone.
+      selector:
+        datetime:
+stop:
+  name: Stop charge or discharge
+  description: Return the supported mode-2 dispatch to normal operation and verify device readback. This does not claim to cancel unrelated control modes.
+  fields:
+    entry_id:
+      name: Integration
+      selector:
+        config_entry:
+          integration: alphaess_relay

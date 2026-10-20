@@ -7,13 +7,14 @@ monitoring API or router watchdog to maintain.
 
 This is a community prototype for the researched AlphaESS version-1 Wi-Fi
 protocol. It is not an official AlphaESS integration. Its first release exposes
-monitoring only and preserves the normal AlphaESS cloud connection. No battery control commands, configuration changes or firmware updates are generated.
+monitoring only and preserves the normal AlphaESS cloud connection. Explicit charge/discharge actions can send bounded local mode-2 Dispatch commands.
+No firmware updates, calibration or installer/safety-setting changes are generated.
 Cloud outage fallback is enabled by default and sends minimal local monitoring
 ACKs only while the cloud path is unavailable.
 
 ## Status and compatibility
 
-- Version 0.4.0; tested with Home Assistant 2026.10.2 and Python 3.14.4.
+- Version 0.5.0; tested with Home Assistant 2026.10.2 and Python 3.14.4.
 - Runtime files are self-contained under `custom_components/alphaess_relay/`.
 - No runtime pip dependencies beyond Home Assistant itself.
 - Offline tests, isolated synthetic peers on live HA, and a short physical
@@ -114,6 +115,31 @@ so the affected TCP session must also reconnect. This does not require a
 battery application command. The complete rollback procedure still needs the
 synthetic LAN routing validation mentioned above.
 
+## Charge and discharge
+
+Two **Force charge / Force discharge** switches use device readback for their
+state. Each has power, target SoC and duration inputs on the device page. Changing
+an input saves settings for the next explicit start; it sends no battery command.
+Turning off returns supported mode-2 dispatch to normal self-consumption, so the
+battery may still supply the home normally. The two forced directions are
+mutually exclusive; switching directions confirms stop before starting the other.
+
+For one action form, use **AlphaESS Relay: Start charge / Start discharge** in HA
+Actions or an automation. Supply watts, target SoC and either duration or an
+absolute end time. Omitted inputs use that direction's saved number values.
+Target SoC is 5–100%, below current SoC for discharge and above it for charge.
+Duration is 90 seconds to three hours; a shorter end-time request is rejected
+rather than extended. Times without an offset use HA's configured time zone.
+
+The wattage ceiling is learned from the device's `Poinv` rating (kW), cached
+locally, and constrained at start by fresh `Pcharge` / `Pdischarge` battery limits
+(W). There is no universal 5,000 W constant. Until a rating report arrives, a
+verified rating can be entered in Advanced relay settings; starts remain
+unavailable without fresh battery limits and status. The initial requested power
+is a conservative 500 W, configurable independently for each direction.
+
+See [control behavior, safeguards and limitations](https://github.com/funkmaster-dan/ha-alphaess-relay/blob/main/CONTROL.md).
+
 ## Cloud outages and recovery
 
 Normal cloud traffic passes unchanged. If connecting to the cloud fails, the
@@ -124,8 +150,9 @@ Closing the old sockets first prevents late cloud ACKs from competing with
 local replies. Reporting can pause during device reconnection.
 
 Local mode acknowledges supported login, startup queries, heartbeats and
-monitoring reports, using the same decoder and sensor freshness rules. It does
-not send battery controls or invent configuration, licensing or time values.
+monitoring reports, using the same decoder and sensor freshness rules. Fallback itself does
+not initiate battery controls or invent configuration, licensing or time values.
+Explicit user charge/discharge actions remain available in local mode.
 History and log ACKs are withheld, allowing live reports to continue without
 retiring undelivered history. Live reports acknowledged locally are not uploaded
 or backfilled into the vendor cloud.
@@ -138,9 +165,9 @@ separate service are needed. See [standalone behavior and validation limits](htt
 
 ## Limits
 
-This version has no local control entities, arbitrary message-send service,
-durable history store, energy-counter normalization or automatic router
-management. Native firmware and isolated loopback tests validate the fallback
+This version has no arbitrary message-send service, durable history store,
+energy-counter normalization or automatic router management. Only bounded mode-2
+charge/discharge is exposed; other dispatch families are not cancelled blindly. Native firmware and isolated loopback tests validate the fallback
 paths. Sustained physical WAN loss, full cold boot, licensing expiry and loss of
 the separate E-Linter channel remain unverified. This is an experimental outage
 responder, not demonstrated complete vendor-cloud replacement.

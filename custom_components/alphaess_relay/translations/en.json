@@ -14,7 +14,8 @@
             "data": {
               "listen_port": "Listening port",
               "listen_host": "Listening IPv4 address",
-              "fallback_enabled": "Use local reporting when the cloud is unavailable"
+              "fallback_enabled": "Use local reporting when the cloud is unavailable",
+              "inverter_rating_w": "Inverter rating in W (only needed until learned from the device)"
             }
           }
         }
@@ -37,7 +38,8 @@
         "data": {
           "listen_port": "Listening port",
           "listen_host": "Listening IPv4 address",
-          "fallback_enabled": "Use local reporting when the cloud is unavailable"
+          "fallback_enabled": "Use local reporting when the cloud is unavailable",
+          "inverter_rating_w": "Inverter rating in W (only needed until learned from the device)"
         }
       }
     },
@@ -78,6 +80,34 @@
       },
       "local_fallback_active": {
         "name": "Local fallback active"
+      }
+    },
+    "switch": {
+      "force_charge": {
+        "name": "Force charge"
+      },
+      "force_discharge": {
+        "name": "Force discharge"
+      }
+    },
+    "number": {
+      "charge_power_w": {
+        "name": "Charge power"
+      },
+      "charge_target_soc": {
+        "name": "Charge target SoC"
+      },
+      "charge_duration_minutes": {
+        "name": "Charge duration"
+      },
+      "discharge_power_w": {
+        "name": "Discharge power"
+      },
+      "discharge_target_soc": {
+        "name": "Discharge target SoC"
+      },
+      "discharge_duration_minutes": {
+        "name": "Discharge duration"
       }
     }
   }

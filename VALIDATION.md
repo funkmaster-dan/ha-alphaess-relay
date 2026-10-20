@@ -1,5 +1,19 @@
 # Validation — 20 October 2026
 
+## 0.5.0 charge/discharge controls
+
+87 HA/core cases pass locally. A new private native regression runs the actual
+production bytes through pinned EMS instructions for charge/discharge at 250 W
+and 5 kW, verifies the 16-character correlation index and status fields, confirms
+same-family disable, and exercises the native 90-second expiry. No hardware
+commands were used for those tests. Physical trial results will be recorded
+separately after development-build validation.
+
+The mode-2 encoding matches the manufacturer draft and the earlier independent
+native Modbus/Wi-Fi state equivalence. An ACK alone is insufficient: switches
+require fresh matching device state. Dynamic battery limits and a learned/cached
+inverter rating gate starts. See [control scope](CONTROL.md).
+
 ## 0.4.0 standalone fallback
 
 Fallback is enabled by default for new and existing entries. Healthy cloud
