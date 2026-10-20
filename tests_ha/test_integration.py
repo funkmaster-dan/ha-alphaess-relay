@@ -137,6 +137,10 @@ async def test_setup_screen_only_serial(hass):
     assert fields["listener"].options["collapsed"]
     assert {str(k) for k in fields["listener"].schema.schema} == {"listen_host", "listen_port"}
     serialized = probatio.to_field_list(result["data_schema"], custom_serializer=cv.custom_serializer)
+    # The frontend initializes an expandable section from its parent default.
+    # An empty parent default hides the nested defaults when expanded.
+    listener_field = next(field for field in serialized if field["name"] == "listener")
+    assert listener_field["default"] == {"listen_host": "0.0.0.0", "listen_port": 17778}
     assert "upstream" not in json.dumps(serialized)
     assert "password" not in json.dumps(serialized)
 

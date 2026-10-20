@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.1
+
+- Populate the advanced setup section with its listening address and port defaults when expanded in the live HA frontend.
+- Verified on live Home Assistant 2026.10.2 through Playwright; regression coverage checks the section data sent to the frontend.
+
 ## 0.2.0
 
 - One Home Assistant integration embeds TCP forwarding, telemetry decoding and sensors.

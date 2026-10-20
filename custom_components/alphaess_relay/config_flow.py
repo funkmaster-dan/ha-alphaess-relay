@@ -75,10 +75,15 @@ class AlphaESSRelayConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         return self.async_create_entry(
                             title=f"AlphaESS {serial}", data={CONF_SERIAL: serial}, options=listener
                         )
+        listener_defaults = {
+            CONF_LISTEN_HOST: DEFAULT_LISTEN_HOST,
+            CONF_LISTEN_PORT: DEFAULT_LISTEN_PORT,
+            **(user_input or {}).get("listener", {}),
+        }
         schema = {
             vol.Required(CONF_SERIAL): str,
-            vol.Optional("listener", default=dict): section(
-                vol.Schema(listener_schema((user_input or {}).get("listener", {}))),
+            vol.Optional("listener", default=listener_defaults): section(
+                vol.Schema(listener_schema(listener_defaults)),
                 {"collapsed": True},
             ),
         }
