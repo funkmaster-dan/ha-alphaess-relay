@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0
+
+- Add Instantaneous generation, Instantaneous home load and Instantaneous grid I/O total, all in W with HA power/measurement metadata.
+- Generation includes the solar inverter's CT/meter reading and all four PV strings. Grid sums the three signed phases; home load uses generation + grid + battery power from one live report.
+- Replace Battery power (raw) with Instantaneous battery I/O and a new entity ID; remove the obsolete raw-power entity from the registry.
+- Missing or invalid inputs make only dependent power sensors unavailable, without fabricated zeroes or values retained from older reports.
+- 34 HA integration tests cover power totals, signs, units, availability and entity replacement. The existing 63-test research/relay regression suite passes.
+
 ## 0.2.1
 
 - Populate the advanced setup section with its listening address and port defaults when expanded in the live HA frontend.

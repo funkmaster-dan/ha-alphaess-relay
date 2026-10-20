@@ -54,11 +54,20 @@
       "state_of_charge": {
         "name": "State of charge"
       },
-      "battery_power_raw": {
-        "name": "Battery power (raw)"
-      },
       "last_received": {
         "name": "Last received"
+      },
+      "generation": {
+        "name": "Instantaneous generation"
+      },
+      "home_load": {
+        "name": "Instantaneous home load"
+      },
+      "grid_io_total": {
+        "name": "Instantaneous grid I/O total"
+      },
+      "battery_io": {
+        "name": "Instantaneous battery I/O"
       }
     },
     "binary_sensor": {

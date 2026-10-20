@@ -19,6 +19,8 @@ from custom_components.alphaess_relay._relay.observer import crc16
 from custom_components.alphaess_relay._relay.payload import encode_payload
 
 SERIAL = "OFFLINE-TEST-EMS"
+POWER_FIELDS = {"Ppv1": "1000", "Ppv2": "200", "Ppv3": "300", "Ppv4": "400",
+                "PmeterDC": "500", "PmeterL1": "-1200", "PmeterL2": "100", "PmeterL3": "-50"}
 
 
 def free_port():
@@ -155,7 +157,7 @@ async def test_setup_is_local_and_unload_releases_listener(hass):
     coordinator = entry.runtime_data
     assert coordinator.relay.address == ("127.0.0.1", entry.options["listen_port"])
     states = hass.states.async_all()
-    assert len([s for s in states if s.entity_id.startswith("sensor.alphaess_")]) == 3
+    assert len([s for s in states if s.entity_id.startswith("sensor.alphaess_")]) == 6
     assert await hass.config_entries.async_unload(entry.entry_id)
     await hass.async_block_till_done()
     assert coordinator.closed
@@ -211,7 +213,7 @@ async def test_flow_rejects_conflicting_listener(hass):
 async def test_sensors_initially_unavailable_and_dns_not_queried(hass, dns):
     async with loaded(hass):
         assert state(hass, "soc").state == STATE_UNAVAILABLE
-        assert state(hass, "battery_power_raw").state == STATE_UNAVAILABLE
+        assert state(hass, "battery_io").state == STATE_UNAVAILABLE
         assert state(hass, "last_received").state == "unknown"
         assert state(hass, "relay_connected", "binary_sensor").state == "off"
         assert dns["calls"] == []
@@ -225,7 +227,7 @@ async def test_telemetry_first_push_updates_entities_and_forwards_unchanged(hass
             cloud_writer.write(b"unsolicited-synthetic-cloud-bytes")
             await cloud_writer.drain()
             assert await asyncio.wait_for(reader.readexactly(33), 2) == b"unsolicited-synthetic-cloud-bytes"
-            data = wire(layers=2)
+            data = wire(layers=2, **POWER_FIELDS)
             for offset in range(0, len(data), 3):
                 writer.write(data[offset:offset+3])
                 await writer.drain()
@@ -234,7 +236,15 @@ async def test_telemetry_first_push_updates_entities_and_forwards_unchanged(hass
             await eventually(lambda: state(hass, "soc").state == "50.4")
             assert state(hass, "soc").attributes["unit_of_measurement"] == "%"
             assert state(hass, "soc").attributes["state_class"] == "measurement"
-            assert state(hass, "battery_power_raw").state == "-321.0"
+            assert state(hass, "battery_io").state == "-321.0"
+            for key, value in (("generation", "2400.0"), ("home_load", "929.0"),
+                               ("grid_io_total", "-1150.0"), ("battery_io", "-321.0")):
+                entity = state(hass, key)
+                assert entity.state == value
+                assert entity.attributes["unit_of_measurement"] == "W"
+                assert entity.attributes["device_class"] == "power"
+                assert entity.attributes["state_class"] == "measurement"
+            assert state(hass, "battery_io").attributes["friendly_name"].endswith("Instantaneous battery I/O")
             assert state(hass, "relay_connected", "binary_sensor").state == "on"
             assert state(hass, "last_received").state != "unknown"
             assert dns["calls"] == [(UPSTREAM_HOST, UPSTREAM_PORT)]
@@ -247,16 +257,73 @@ async def test_stale_timer_marks_data_unavailable_and_new_frame_recovers(hass, d
         coordinator.relay.observer.freshness_seconds = 0.08
         async with device(entry) as (_, writer):
             await peers.get()
-            writer.write(wire())
+            writer.write(wire(**POWER_FIELDS))
             await writer.drain()
             await eventually(lambda: state(hass, "soc").state == "50.4")
             received = state(hass, "last_received").state
             await eventually(lambda: state(hass, "soc").state == STATE_UNAVAILABLE)
+            for key in ("generation", "home_load", "grid_io_total", "battery_io"):
+                assert state(hass, key).state == STATE_UNAVAILABLE
             assert state(hass, "last_received").state == received
             assert state(hass, "relay_connected", "binary_sensor").state == "on"
             writer.write(wire(soc="52.0"))
             await writer.drain()
             await eventually(lambda: state(hass, "soc").state == "52.0")
+            # A newer incomplete report must not retain old power measurements.
+            for key in ("generation", "home_load", "grid_io_total"):
+                assert state(hass, key).state == STATE_UNAVAILABLE
+
+
+@pytest.mark.parametrize(("field", "value", "unavailable"), [
+    ("PmeterL2", None, ("grid_io_total", "home_load")),
+    ("Ppv4", "bad", ("generation", "home_load")),
+    ("PmeterDC", True, ("generation", "home_load")),
+    ("Pbat", "nan", ("battery_io", "home_load")),
+])
+async def test_invalid_optional_power_only_affects_dependent_sensors(hass, dns, field, value, unavailable):
+    async with cloud() as (port, peers), loaded(hass) as entry:
+        dns["port"] = port
+        async with device(entry) as (_, writer):
+            cloud_reader, _ = await peers.get()
+            values = {**POWER_FIELDS, "Pbat": "-321", field: value}
+            data = wire(power=values.pop("Pbat"), **values)
+            writer.write(data)
+            await writer.drain()
+            assert await cloud_reader.readexactly(len(data)) == data
+            await eventually(lambda: state(hass, "soc").state == "50.4")
+            for key in ("generation", "home_load", "grid_io_total", "battery_io"):
+                assert (state(hass, key).state == STATE_UNAVAILABLE) == (key in unavailable)
+
+
+@pytest.mark.parametrize(("battery", "grid", "expected_load"), [
+    ("321", ["-1200", "100", "-50"], 1571.0),
+    ("-321", ["500", "200", "300"], 3079.0),
+    ("0", ["0", "0", "0"], 2400.0),
+])
+def test_power_balance_preserves_import_export_and_charge_discharge(battery, grid, expected_load):
+    from custom_components.alphaess_relay._relay.payload import telemetry_reading
+    data = {"SN": SERIAL, "Time": "2026/10/20 12:00:00", "SOC": "50", **POWER_FIELDS,
+            "Pbat": battery, **{f"PmeterL{i}": value for i, value in enumerate(grid, 1)}}
+    result = telemetry_reading(data)
+    assert result["generation_w"] == 2400
+    assert result["grid_io_w"] == sum(map(float, grid))
+    assert result["battery_power_w"] == float(battery)
+    assert result["home_load_w"] == expected_load
+
+
+async def test_battery_rename_replaces_obsolete_entity(hass):
+    entry = make_entry(hass)
+    registry = er.async_get(hass)
+    existing = registry.async_get_or_create("sensor", DOMAIN, f"{SERIAL}_battery_power_raw",
+        config_entry=entry, suggested_object_id="existing_battery")
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    renamed = state(hass, "battery_io")
+    assert renamed.entity_id != existing.entity_id
+    assert registry.async_get(existing.entity_id) is None
+    assert renamed.entity_id.endswith("_instantaneous_battery_i_o")
+    assert renamed.attributes["friendly_name"].endswith("Instantaneous battery I/O")
+    assert await hass.config_entries.async_unload(entry.entry_id)
 
 
 async def test_bad_identity_crc_and_history_do_not_change_sensors(hass, dns):
@@ -274,7 +341,7 @@ async def test_bad_identity_crc_and_history_do_not_change_sensors(hass, dns):
             writer.write(wire(power=None))
             await writer.drain()
             await eventually(lambda: state(hass, "soc").state == "50.4")
-            assert state(hass, "battery_power_raw").state == STATE_UNAVAILABLE
+            assert state(hass, "battery_io").state == STATE_UNAVAILABLE
 
 
 async def test_reconnect_resolves_dns_again_and_does_not_restore_stale_state(hass, dns):

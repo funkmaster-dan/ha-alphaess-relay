@@ -12,11 +12,12 @@ commands, local ACKs, configuration changes or firmware updates are generated.
 
 ## Status and compatibility
 
-- Version 0.2.0; tested with Home Assistant 2026.10.2 and Python 3.14.4.
+- Version 0.3.0; tested with Home Assistant 2026.10.2 and Python 3.14.4.
 - Runtime files are self-contained under `custom_components/alphaess_relay/`.
 - No runtime pip dependencies beyond Home Assistant itself.
-- Synthetic/recorded-byte tests are offline. A live router diversion and
-  physical battery pass-through are not yet validated for this package.
+- Offline tests, isolated synthetic peers on live HA, and a short physical
+  battery pass-through have passed. An extended soak is still needed; see
+  [validation evidence and limits](https://github.com/funkmaster-dan/ha-alphaess-relay/blob/main/VALIDATION.md).
 - Repository: [funkmaster-dan/ha-alphaess-relay](https://github.com/funkmaster-dan/ha-alphaess-relay).
 - Install through HACS as a custom repository of type **Integration**, or use
   the ZIP from GitHub Releases for a manual installation.
@@ -50,13 +51,16 @@ and add the integration. HACS does not configure the router.
 | Entity | Behavior |
 | --- | --- |
 | State of charge | Percentage from CRC-valid live command 10, matching the configured system serial |
-| Battery power (raw) | Signed watts, retained as reported; captures support positive discharge and negative charging on the researched installation |
+| Instantaneous battery I/O | W; positive discharge, negative charging; replaces the prototype raw-power entity with a new entity ID |
+| Instantaneous generation | W; total of all four PV strings plus the external solar CT/meter (`PmeterDC`) |
+| Instantaneous home load | W; derived from generation + signed grid I/O + signed battery I/O in the same report |
+| Instantaneous grid I/O total | W; sum of all three grid phases, positive import / negative export |
 | Last received | Diagnostic timestamp of the last accepted live report; remains visible when telemetry becomes stale |
 | Relay connected | Diagnostic binary sensor: an active device-to-cloud relay TCP session exists |
 
 SoC and power become unavailable on disconnect, after 45 seconds without a
 valid live report, or until a new session supplies its own live telemetry.
-Missing power stays unavailable. Old readings are never replaced with invented
+Missing or invalid source fields make only dependent power sensors unavailable. Generation requires all four string values and the external meter value; grid requires all three phases. Missing fields are not assumed to be zero. Old readings are never replaced with invented
 zeroes, and history is not mixed into live state. Freshness uses monotonic
 receive time rather than the battery's clock.
 

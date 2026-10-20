@@ -28,6 +28,9 @@ class Reading:
     soc_pct: float
     battery_power_raw_w: float | None
     encoding_layers: int
+    generation_w: float | None = None
+    home_load_w: float | None = None
+    grid_io_w: float | None = None
 
 
 class TelemetryDecoder:
@@ -97,7 +100,9 @@ class TelemetryDecoder:
                     counts["serial_mismatches"] += 1
                     continue
                 readings.append(Reading(value["serial"], value["device_time"], value["soc_pct"],
-                                        value.get("battery_power_w"), payload.layers))
+                                        value.get("battery_power_w"), payload.layers,
+                                        value.get("generation_w"), value.get("home_load_w"),
+                                        value.get("grid_io_w")))
             except (ValueError, TypeError, KeyError, OverflowError, RecursionError):
                 counts["invalid_telemetry"] += 1
         # Retain only a partial candidate or the possible start of a header.
@@ -200,6 +205,10 @@ class Observer:
                      "quality": {"crc_valid": True, "encoding_layers": r.encoding_layers}}
             if r.battery_power_raw_w is not None:
                 state["battery_power_raw_w"] = r.battery_power_raw_w
+            for key in ("generation_w", "home_load_w", "grid_io_w"):
+                value = getattr(r, key)
+                if value is not None:
+                    state[key] = value
         return {"available": bool(available), "age_seconds": age, "telemetry": state,
                 "observer": {"queue_depth": self.queue.qsize(), "queue_limit": self.queue.maxsize,
                              "counters": dict(self.counters)}}

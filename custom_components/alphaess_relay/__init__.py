@@ -25,6 +25,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         ) from err
     entry.runtime_data = coordinator
     try:
+        # Replace the prototype's raw-power entity with a new battery I/O ID.
+        from homeassistant.helpers import entity_registry as er
+        from .const import CONF_SERIAL, DOMAIN
+
+        registry = er.async_get(hass)
+        for entity in er.async_entries_for_config_entry(registry, entry.entry_id):
+            if entity.platform == DOMAIN and entity.unique_id == f"{entry.data[CONF_SERIAL]}_battery_power_raw":
+                registry.async_remove(entity.entity_id)
         await hass.config_entries.async_forward_entry_setups(
             entry, [Platform.SENSOR, Platform.BINARY_SENSOR]
         )

@@ -1,10 +1,10 @@
 {
   "observer.py": {
-    "sha256": "c7213ce08267707c313e38ec04759fdf335b1f90a6087c8f96c30c72a919a19b",
+    "sha256": "40ba811a7763068ff5a878ab5f19ef35b0e4abd571efb3a878d86af69efe14a3",
     "source": "alpha_relay/observer.py"
   },
   "payload.py": {
-    "sha256": "ed091d89768c6120dbd0d9e19645f7c810afc42011e4f4f7a5af75a1dde8ac2b",
+    "sha256": "002873a901151be160847ac47b47c5f6154e770fea2d0c02b6e9a8118612d8c1",
     "source": "tools/alpha_payload.py"
   },
   "relay.py": {

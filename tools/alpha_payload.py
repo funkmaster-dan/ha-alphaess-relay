@@ -69,6 +69,25 @@ def decode_payload(payload, *, max_layers=2):
     raise ValueError("Payload is not supported JSON/CSV within two encoding layers")
 
 
+def _power(parsed, key):
+    """An absent or invalid optional measurement must not invent a zero."""
+    value = parsed.get(key)
+    if isinstance(value, bool) or not isinstance(value, (str, int, float)):
+        return None
+    try:
+        number = float(value)
+    except (ValueError, OverflowError):
+        return None
+    return number if math.isfinite(number) else None
+
+
+def _power_total(values):
+    if any(value is None for value in values):
+        return None
+    total = sum(values)
+    return total if math.isfinite(total) else None
+
+
 def telemetry_reading(parsed):
     """Return validated, minimal live-telemetry fields; omit other payload data."""
     if not isinstance(parsed, dict):
@@ -84,8 +103,17 @@ def telemetry_reading(parsed):
     if not math.isfinite(soc) or not 0 <= soc <= 100:
         raise ValueError("SoC is not a finite percentage from 0 to 100")
     reading = {"serial": serial, "device_time": device_time, "soc_pct": soc}
-    if "Pbat" in parsed:
-        power = float(parsed["Pbat"])
-        if math.isfinite(power):
-            reading["battery_power_w"] = power
+    battery = _power(parsed, "Pbat")
+    # AlphaESS generation includes the external PV meter as well as all four
+    # inverter PV strings. Grid is signed import (+) / export (-).
+    generation = _power_total([_power(parsed, key) for key in
+                               ("Ppv1", "Ppv2", "Ppv3", "Ppv4", "PmeterDC")])
+    grid = _power_total([_power(parsed, f"PmeterL{phase}") for phase in (1, 2, 3)])
+    # Derived from the same report, matching cloud ppv + pgrid + pbat. Native
+    # Pbat is positive discharge / negative charge; do not substitute Preal.
+    load = _power_total([generation, grid, battery])
+    for key, value in (("battery_power_w", battery), ("generation_w", generation),
+                       ("grid_io_w", grid), ("home_load_w", load)):
+        if value is not None:
+            reading[key] = value
     return reading

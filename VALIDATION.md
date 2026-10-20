@@ -1,5 +1,34 @@
 # Validation — 20 October 2026
 
+## 0.3.0 power sensors
+
+The added generation, home-load and total grid I/O sensors use watts, power
+device class and measurement state class, matching the
+[AlphaESS integration's sensor definitions](https://github.com/CharlesGillanders/homeassistant-alphaESS/blob/main/custom_components/alphaess/sensorlist.py).
+Its [power parser](https://github.com/CharlesGillanders/homeassistant-alphaESS/blob/main/custom_components/alphaess/coordinator.py)
+reads the cloud's `ppv`, `pload`, `pgrid` and `pbat` fields.
+
+Passive wire reports and the owner's existing cloud integration gave an exact
+comparison during battery discharge. The generation value includes the
+external solar inverter's CT/meter (`PmeterDC`). Local totals are:
+
+- Generation: `Ppv1 + Ppv2 + Ppv3 + Ppv4 + PmeterDC`.
+- Grid I/O: `PmeterL1 + PmeterL2 + PmeterL3`, import positive, export negative.
+- Home load: generation + grid I/O + `Pbat`, discharge positive, charge negative.
+
+Each total requires all its inputs in the same CRC-valid live report. An
+absent, invalid or stale input makes its dependent sensors unavailable. No
+phase, string or meter is silently treated as zero. Native firmware deadbands
+remain unchanged. Synthetic tests cover all nonzero strings/phases, import,
+export, charge/discharge, missing/invalid data, units, freshness and replacing
+the prototype battery entity with a new entity ID.
+
+**34 tests pass** in HA 2026.10.2; the existing **63 research/relay regression
+tests pass**. This extends the earlier pass-through evidence below; it does
+not establish compatibility with other hardware/firmware or prolonged uptime.
+
+## 0.2.1 initial live deployment
+
 Version 0.2.1 has been installed through HACS and exercised on live Home
 Assistant 2026.10.2 using Python Playwright and Chrome. The monitoring relay
 remains enabled at the owner's request, using a static OpenWrt DNAT/SNAT include.
