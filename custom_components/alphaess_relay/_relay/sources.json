@@ -1,6 +1,6 @@
 {
   "control.py": {
-    "sha256": "9c62da4b1d13129933c5180cb2f08a7c877e24f5d5b0f136a2a0a2d34dafa37d",
+    "sha256": "14b60c9686e0c6b8fe1427eb1f9ee1f647c23a5917a3769d249a8770a79baf32",
     "source": "alpha_relay/control.py"
   },
   "observer.py": {

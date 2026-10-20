@@ -74,14 +74,17 @@ def test_reported_rating_and_live_battery_limits_are_separate():
     assert control.nominal_power_w is None
     control.observe(frame(4, {"SN": SERIAL, "Poinv": "5.000"}))
     assert control.nominal_power_w == 5000
-    assert control.maximum_power("charge") is None
+    assert control.maximum_power("charge") == 5000
+    assert not control.limits_current()
     control.observe(report(command=5, Pcharge=15435, Pdischarge=4000))
     assert control.maximum_power("charge") == 5000
     assert control.maximum_power("discharge") == 4000
+    assert control.limits_current()
     control.observe(report(command=5, Pcharge=0, Pdischarge=0))
     assert control.maximum_power("charge") == 0
     control.observe(report(command=5, Pcharge="nan", Pdischarge=999999))
-    assert control.maximum_power("discharge") is None
+    assert control.maximum_power("discharge") == 5000
+    assert not control.limits_current()
     control.disconnected()
     assert control.nominal_power_w == 5000 and not control.fresh()
 

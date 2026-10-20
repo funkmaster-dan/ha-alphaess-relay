@@ -146,7 +146,7 @@ class DispatchController:
         async with self.lock:
             try:
                 if not self.available(direction):
-                    raise ControlError("Waiting for fresh device status and power limits")
+                    raise ControlError("Waiting for fresh device status and a verified inverter rating")
                 if duration_minutes is not None and end_time is not None:
                     raise ControlError("Choose a duration or an end time")
                 power = self.validate_setting(f"{direction}_power_w", power_w if power_w is not None

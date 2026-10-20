@@ -12,10 +12,13 @@ fallback modes; there is no portal credential or separate service dependency.
 - Learn nominal watts from the matching device's report-04 `Poinv` in kW and
   cache it in HA storage. An optional advanced inverter-rating input permits
   commissioning from verified device/nameplate information before that report.
-- Require fresh report-05 `Pcharge` and `Pdischarge` limits, with verified integer
-  W units. The allowed start power is the smaller of nominal inverter rating and
-  the relevant current battery limit. Missing, zero or stale limits block starts.
-- Saved power inputs are bounded by nominal rating; live limits are rechecked
+- Read report-05 `Pcharge` and `Pdischarge` limits in verified integer W units.
+  For 15 minutes after a valid detailed report, constrain the nominal rating by
+  the relevant reported limit; a reported zero blocks that direction. Without
+  a current detailed report, use the verified inverter rating as the request
+  ceiling. Fast status must still be fresh. This is a command ceiling, not
+  a substitute for device-side BMS/inverter protections.
+- Saved power inputs are bounded by nominal rating; available reported limits are rechecked
   when starting. A battery limit is not a promise that the requested physical
   power will be achieved under all operating conditions.
 - Target SoC is 5–100%. Discharge rounds up to a 0.4% protocol step (5% becomes

@@ -14,7 +14,7 @@ ACKs only while the cloud path is unavailable.
 
 ## Status and compatibility
 
-- Version 0.5.0; tested with Home Assistant 2026.10.2 and Python 3.14.4.
+- Version 0.5.1; tested with Home Assistant 2026.10.2 and Python 3.14.4.
 - Runtime files are self-contained under `custom_components/alphaess_relay/`.
 - No runtime pip dependencies beyond Home Assistant itself.
 - Offline tests, isolated synthetic peers on live HA, and a short physical
@@ -132,10 +132,12 @@ Duration is 90 seconds to three hours; a shorter end-time request is rejected
 rather than extended. Times without an offset use HA's configured time zone.
 
 The wattage ceiling is learned from the device's `Poinv` rating (kW), cached
-locally, and constrained at start by fresh `Pcharge` / `Pdischarge` battery limits
+locally, and reduced at start by current `Pcharge` / `Pdischarge` battery limits
 (W). There is no universal 5,000 W constant. Until a rating report arrives, a
 verified rating can be entered in Advanced relay settings; starts remain
-unavailable without fresh battery limits and status. The initial requested power
+unavailable without a verified inverter rating and fresh status. If the sparse
+battery-limit report is not current, the inverter rating bounds the request;
+this does not bypass device-side battery protections. The initial requested power
 is a conservative 500 W, configurable independently for each direction.
 
 See [control behavior, safeguards and limitations](https://github.com/funkmaster-dan/ha-alphaess-relay/blob/main/CONTROL.md).

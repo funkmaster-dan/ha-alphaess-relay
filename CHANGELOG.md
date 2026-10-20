@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.1
+
+- Use the verified/cached inverter rating when the sparse detailed battery-limit report is not current. Current reported limits can reduce the request ceiling; zero blocks that direction. Fresh live state is always required.
+- Correct commissioning availability without changing battery protections or assuming a universal 5000 W limit.
+
 ## 0.5.0
 
 - Add device-confirmed Force charge and Force discharge switches, with separate wattage, target SoC and duration inputs.

@@ -165,10 +165,16 @@ class ControlState:
     def maximum_power(self, direction):
         if self.nominal_power_w is None:
             return None
-        if self.limits_received is None or time.monotonic() - self.limits_received > 180:
-            return None
+        # Detailed limit reports are much less frequent than live telemetry.
+        # Nominal inverter rating bounds the request when no current BMS report
+        # is available; this never changes or bypasses device-side protection.
+        if not self.limits_current():
+            return self.nominal_power_w
         limit = self.limits.get(direction)
-        return min(self.nominal_power_w, limit) if limit is not None else None
+        return min(self.nominal_power_w, limit) if limit is not None else self.nominal_power_w
+
+    def limits_current(self):
+        return self.limits_received is not None and time.monotonic() - self.limits_received <= 900
 
     def fresh(self):
         return self.received is not None and time.monotonic() - self.received <= 45
@@ -181,6 +187,7 @@ class ControlState:
         return {"nominal_power_w": self.nominal_power_w,
                 "max_charge_power_w": self.maximum_power("charge"),
                 "max_discharge_power_w": self.maximum_power("discharge"),
+                "battery_limits_current": self.limits_current(),
                 "dispatch": self.dispatch if self.fresh() else None,
                 "counters": dict(self.counters)}
 
